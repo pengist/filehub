@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>文件列表</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-family: Arial, sans-serif;
+            }
+            th,
+            td {
+                border: 1px solid #ccc;
+                text-align: left;
+            }
+            th {
+                color: #555;
+                padding: 5px 10px;
+                background-color: #f2f2f2;
+                font-size: 15px;
+            }
+            td {
+                color: #888;
+                padding: 3px 10px;
+                font-size: 13px;
+            }
+
+            button {
+                margin-right: 5px;
+                padding: 4px 8px;
+                font-size: 14px;
+                font-family: Arial, sans-serif;
+                color: #4a4a4a;
+                background-color: #f2f2f2;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            button:hover {
+                background-color: #e0e0e0;
+            }
+        </style>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/login.html";
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) {
+                    return "0 B";
+                }
+
+                const k = 1024;
+                const sizes = [
+                    "B",
+                    "KB",
+                    "MB",
+                    "GB",
+                    "TB",
+                    "PB",
+                    "EB",
+                    "ZB",
+                    "YB",
+                ];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+                return (bytes / Math.pow(k, i)).toFixed(2) + " " + sizes[i];
+            }
+
+            function formatDateTime(timestamp) {
+                const date = new Date(timestamp);
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                const day = date.getDate().toString().padStart(2, "0");
+                const hours = date.getHours().toString().padStart(2, "0");
+                const minutes = date.getMinutes().toString().padStart(2, "0");
+                const seconds = date.getSeconds().toString().padStart(2, "0");
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            }
+
+            $(document).ready(function () {
+                $.ajax({
+                    url: "/api/files",
+                    type: "GET",
+                    dataType: "json",
+                    headers: { token },
+                    success: function (data) {
+                        let tableBody = $("#fileList tbody");
+                        data.forEach(function (file) {
+                            let row = $("<tr></tr>");
+                            row.append($("<td></td>").text(file.id));
+                            row.append($("<td></td>").text(file.name));
+                            row.append(
+                                $("<td></td>").text(formatFileSize(file.size)),
+                            );
+                            row.append(
+                                $("<td></td>").text(
+                                    formatDateTime(file.upload_time),
+                                ),
+                            );
+                            let actionCell = $("<td></td>");
+                            let deleteButton = $("<button></button>")
+                                .text("删除")
+                                .attr("data-id", file.id)
+                                .on("click", function () {
+                                    // 在这里实现删除功能
+                                    console.log(
+                                        "删除文件ID: " + $(this).data("id"),
+                                    );
+                                });
+                            let copyButton = $("<button></button>")
+                                .text("复制")
+                                .attr("data-id", file.id)
+                                .on("click", function () {
+                                    // 在这里实现复制功能
+                                    console.log(
+                                        "复制文件ID: " + $(this).data("id"),
+                                    );
+                                });
+                            actionCell.append(deleteButton, copyButton);
+                            row.append(actionCell);
+                            tableBody.append(row);
+                        });
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        console.log(
+                            "Error: " + textStatus + " - " + errorThrown,
+                        );
+                    },
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <table id="fileList">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>大小</th>
+                    <th>上传时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 动态生成表格数据 -->
+            </tbody>
+        </table>
+    </body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login</title>
+        <style>
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                font-family: Arial, sans-serif;
+            }
+            h1 {
+                font-size: 25px;
+                font-weight: normal;
+                color: #333;
+            }
+            .content {
+                width: 600px;
+                text-align: center;
+                margin-top: -150px;
+            }
+            .otp-box {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            .otp-input {
+                width: 38px;
+                height: 38px;
+                margin: 0 3px;
+                text-align: center;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                font-size: 15px;
+            }
+            button {
+                padding: 6px 25px;
+                font-size: 15px;
+                color: #3165a4;
+                background-color: rgba(53, 179, 233, 0.544);
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+        </style>
+        <script>
+            function submitOTP() {
+                let otp = "";
+                const inputs = document.getElementsByClassName("otp-input");
+                for (let i = 0; i < inputs.length; i++) {
+                    otp += inputs[i].value;
+                }
+                if (otp.length !== 6) {
+                    alert("请填写所有验证码位数");
+                    return;
+                }
+
+                // AJAX request
+                const xHttp = new XMLHttpRequest();
+                xHttp.onreadystatechange = function () {
+                    if (this.readyState === 4 && this.status === 200) {
+                        const response = JSON.parse(this.responseText);
+                        localStorage.setItem("token", response.token);
+                        location.href = "/files";
+                    }
+                };
+                xHttp.open("POST", "/api/login", true);
+                xHttp.setRequestHeader(
+                    "Content-type",
+                    "application/x-www-form-urlencoded",
+                );
+                xHttp.send("code=" + otp);
+            }
+        </script>
+    </head>
+    <body>
+        <div class="content">
+            <h1>一次性验证码验证</h1>
+            <div class="otp-box">
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="1"
+                    class="otp-input"
+                />
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="1"
+                    class="otp-input"
+                />
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="1"
+                    class="otp-input"
+                />
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="1"
+                    class="otp-input"
+                />
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="1"
+                    class="otp-input"
+                />
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="1"
+                    class="otp-input"
+                />
+            </div>
+            <button onclick="submitOTP()">提交</button>
+        </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const inputs = document.querySelectorAll(".otp-input");
+
+                // 添加 keyup 事件处理器
+                inputs.forEach((input, index) => {
+                    input.addEventListener("keyup", (event) => {
+                        const keyCode = event.keyCode || event.which;
+
+                        if (keyCode === 8 || keyCode === 37) {
+                            // Backspace or Left Arrow
+                            if (index > 0) {
+                                inputs[index - 1].focus();
+                                inputs[index - 1].select();
+                            }
+                        } else if (keyCode === 39) {
+                            // Right Arrow
+                            if (index < inputs.length - 1) {
+                                inputs[index + 1].focus();
+                                inputs[index + 1].select();
+                            }
+                        } else if (keyCode >= 48 && keyCode <= 57) {
+                            // Number keys (0-9)
+                            if (index < inputs.length - 1) {
+                                inputs[index + 1].focus();
+                                inputs[index + 1].select();
+                            }
+                        } else {
+                            // Prevent non-numeric input
+                            input.value = "";
+                        }
+                    });
+                    // 添加 input 事件处理器
+                    input.addEventListener("input", (event) => {
+                        // Ensure only numeric input
+                        const nonNumeric = /[^0-9]/g;
+                        if (nonNumeric.test(input.value)) {
+                            input.value = input.value.replace(nonNumeric, "");
+                        }
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
