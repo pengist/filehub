@@ -293,7 +293,7 @@ func main() {
 		})
 	})
 
-	r.Run(":8080")
+	r.Run(":8086")
 }
 
 func customRecovery() gin.HandlerFunc {
