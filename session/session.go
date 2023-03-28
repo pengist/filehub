@@ -1,10 +1,10 @@
 package session
 
 import (
-	"encoding/base64"
-	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 type Session struct {
@@ -34,7 +34,8 @@ func (sm *SessionManager) CreateSession(duration time.Duration) *Session {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	token, _ := generateToken(32)
+	token := xid.New().String()
+
 	session := &Session{
 		Token:     token,
 		Data:      make(map[string]interface{}),
@@ -62,16 +63,13 @@ func (sm *SessionManager) RemoveSession(token string) {
 	delete(sm.sessions, token)
 }
 
-func generateToken(length int) (string, error) {
-	// 生成随机字节
-	bytes := make([]byte, length)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", err
+func (sm *SessionManager) RemoveExpiredSessions() {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	for token, session := range sm.sessions {
+		if session.ExpiresAt.Before(time.Now()) {
+			delete(sm.sessions, token)
+		}
 	}
-
-	// 将字节编码为 Base64 字符串
-	token := base64.URLEncoding.EncodeToString(bytes)
-
-	return token, nil
 }

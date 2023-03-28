@@ -6,6 +6,35 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>文件列表</title>
         <style>
+            .wrap {
+                width: 1000px;
+                margin: 0 auto;
+            }
+
+            .wrap h1 {
+                font-size: 30px;
+                font-weight: 400;
+                color: #555;
+            }
+
+            .wrap p {
+                font-size: 14px;
+                color: #888;
+            }
+
+            .wrap .code {
+                padding: 15px 30px;
+                background-color: #f2f2f2;
+                border-radius: 4px;
+                font-size: 14px;
+                color: #888;
+                font-family: Consolas, monospace;
+            }
+
+            .text-center {
+                text-align: center;
+            }
+
             table {
                 border-collapse: collapse;
                 width: 100%;
@@ -49,7 +78,7 @@
         <script>
             const token = localStorage.getItem("token");
             if (!token) {
-                window.location.href = "/login.html";
+                window.location.href = "/login";
             }
 
             function formatFileSize(bytes) {
@@ -91,12 +120,21 @@
                     type: "GET",
                     dataType: "json",
                     headers: { token },
-                    success: function (data) {
+                    success: function (res) {
+                        const downloadToken = res.downloadToken;
+                        const uploadToken = res.uploadToken;
+                        localStorage.setItem("upload_token", uploadToken);
+
+                        const uploadCommand = `curl --location '${location.origin}/files/${uploadToken}' --form 'file=@"fileName"'`;
+                        $("#uploadCommand").text(uploadCommand);
+
                         let tableBody = $("#fileList tbody");
-                        data.forEach(function (file) {
+                        res.data.forEach(function (file) {
                             let row = $("<tr></tr>");
                             row.append($("<td></td>").text(file.id));
                             row.append($("<td></td>").text(file.name));
+                            row.append($("<td></td>").text(file.type));
+                            row.append($("<td></td>").text(file.suffix));
                             row.append(
                                 $("<td></td>").text(formatFileSize(file.size)),
                             );
@@ -105,25 +143,31 @@
                                     formatDateTime(file.upload_time),
                                 ),
                             );
-                            let actionCell = $("<td></td>");
+                            let actionCell = $('<td class="text-center"></td>');
                             let deleteButton = $("<button></button>")
                                 .text("删除")
                                 .attr("data-id", file.id)
                                 .on("click", function () {
-                                    // 在这里实现删除功能
-                                    console.log(
-                                        "删除文件ID: " + $(this).data("id"),
-                                    );
+                                    $.ajax({
+                                        url: "/api/files/" + $(this).data("id"),
+                                        type: "DELETE",
+                                        dataType: "json",
+                                        headers: { token },
+                                        success: function (data) {
+                                            alert("删除成功");
+                                            window.location.reload();
+                                        },
+                                    });
                                 });
                             let copyButton = $("<button></button>")
                                 .text("复制")
                                 .attr("data-id", file.id)
                                 .on("click", function () {
-                                    // 在这里实现复制功能
-                                    console.log(
-                                        "复制文件ID: " + $(this).data("id"),
-                                    );
+                                    const fileId = $(this).data("id");
+                                    const fileURL = `${location.origin}/files/${fileId}?token=${downloadToken}`;
+                                    navigator.clipboard.writeText(fileURL);
                                 });
+
                             actionCell.append(deleteButton, copyButton);
                             row.append(actionCell);
                             tableBody.append(row);
@@ -133,25 +177,87 @@
                         console.log(
                             "Error: " + textStatus + " - " + errorThrown,
                         );
+                        location.href = "/login";
                     },
+                });
+
+                $("#upload-btn").on("click", function () {
+                    $("#file-to-upload").click();
+                });
+
+                $("#file-to-upload").on("change", function () {
+                    const $fileInput = $("#file-to-upload");
+                    const file = $fileInput.prop("files")[0];
+
+                    if (file) {
+                        const formData = new FormData();
+                        formData.append("file", file);
+
+                        const xhr = new XMLHttpRequest();
+                        const uploadToken =
+                            localStorage.getItem("upload_token");
+                        xhr.open("POST", `/files/${uploadToken}`, true);
+
+                        // 请求成功时的回调函数
+                        xhr.onload = function () {
+                            if (xhr.status === 200) {
+                                alert("文件上传成功");
+                                window.location.reload();
+                            } else {
+                                alert("文件上传失败");
+                            }
+                        };
+
+                        // 发送请求
+                        xhr.send(formData);
+                    } else {
+                        alert("请选择要上传的文件");
+                    }
+                });
+
+                $("#logout-btn").on("click", function () {
+                    localStorage.removeItem("token");
+                    location.href = "/login";
                 });
             });
         </script>
     </head>
     <body>
-        <table id="fileList">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>名称</th>
-                    <th>大小</th>
-                    <th>上传时间</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- 动态生成表格数据 -->
-            </tbody>
-        </table>
+        <div class="wrap">
+            <div>
+                <h1>文件列表</h1>
+                <p>
+                    文件保存时间为 24 小时，超过 24 小时的文件将会被自动删除。
+                </p>
+                <span>上传文件：</span>
+                <p class="code" id="uploadCommand"></p>
+            </div>
+            <div style="margin-bottom: 10px">
+                <input
+                    type="file"
+                    name="file-to-upload"
+                    id="file-to-upload"
+                    style="display: none"
+                />
+                <button id="upload-btn">上传文件</button>
+                <button id="logout-btn">退出登录</button>
+            </div>
+            <table id="fileList">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>后缀名</th>
+                        <th>大小</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 动态生成表格数据 -->
+                </tbody>
+            </table>
+        </div>
     </body>
 </html>
