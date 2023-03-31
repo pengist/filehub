@@ -365,7 +365,7 @@ func findFileByID(metadata []FileMetadata, id string) (*FileMetadata, error) {
 
 func removeExpiredFiles() {
 	metadata, err := readFilesMetadata()
-	if err == nil {
+	if err != nil {
 		panic("Reading file metadata failed")
 	}
 
